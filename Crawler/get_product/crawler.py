@@ -51,7 +51,7 @@ class media():
         try:
             html = urllib2.urlopen(req)
             content = html.read()
-            print html.info()
+#            print html.info()
             html.close()
             return content
         except:
@@ -89,7 +89,7 @@ class media():
         self.referer = "https://www.taobao.com/"
         content = self.GetContent()
         __clear__ = '<a href=.*?</a>'
-        match = open(self.base_dir_url+"url_first.html", "w")
+        match = open(self.base_dir_url+"url_first.html", 'w')
         try:
             all_link = re.findall(__clear__, content, re.S)
             print "All links of the web page is: ", len(all_link)
@@ -100,11 +100,10 @@ class media():
             match.close()
         match.close()
 
-    def DealUrlSecond(self, match_txt, match, content):
+    def DealUrlSecond14(self, match, content):
         """
             To handle something to get the link
                 input:
-                    match_txt       the pointer of the html file
                     match           pointer of file
                     content         the content of the html
         """
@@ -112,7 +111,7 @@ class media():
         __clear__1 = '<dd class="cat-title" data-tag=""><a href=.*?</a></dd>'
         model_break = '<a href="#nogo"></a>'
         try:
-            for line in match_txt.readlines():
+            for line in content.split('\n'):
                 if re.search(model_break, line):
                     break
                 if re.search(__clear__1, line):
@@ -131,30 +130,59 @@ class media():
                             print >> match, result[0][0]+' '+result[0][1].decode('gbk').encode('utf-8')
         except:
             print 'Something wrong is happening in the GetUrlSecond!'
+    
+    def DealUrlSecond58(self, match, content):
+        __part__ = '<dl class="" data-ext-img="//img.alicdn.com/(.*?)</dl>'
+        allPart = re.findall(__part__, content, re.S)
+        
+        __title__ = '<dt class="clearfix">(.*?)</dt>'
+        __content__ = '</dt>(.*?)<textarea'
+        __info__ = '<a href=.*?</a>'
+        __url__ = '<a href="(.*?)">'
+        __name__ = '">(.*?)</a>'
+        for part in allPart:
+            allTitle = re.findall(__title__, part, re.S)
+            print >> match, allTitle[0]
+            allContent = re.findall(__content__, part, re.S)
+            for temp in allContent:
+                allInfo = re.findall(__info__, temp, re.S)
+                for info in allInfo:
+                    url = re.findall(__url__, info)
+                    name = re.findall(__name__, info)
+                    print >> match, url[0]+' '+name[0]
+            print >> match, '\n\n'
+            
 
     def GetUrlSecond(self):
         """
             To get the url of the third floor
         """
+        counter = 0
         file_handler = open(self.base_dir_url+"url_first.html", "r")
         for line in file_handler.readlines():
             url_name = line.strip().split()
-            match_txt = open(self.base_dir_url+url_name[1].decode('utf-8').encode('gbk')+'.txt', "w")
-            self.url = 'https:'+url_name[0]
+            
+            self.url = 'http:'+url_name[0]
             if re.search('www.taobao.*', url_name[0]):
                 self.host = "www.taobao.com"
             else:
-                self.host = 'www.jiyoujia.com'
+                getHost = re.findall('//(.*?.com)', url_name[0])
+                self.host = getHost[0]
+                print url_name[1].decode('utf-8').encode('gbk') +':'+ getHost[0]+','+self.url
             self.referer = "https://www.taobao.com/"
+            match_txt = open(self.base_dir_url+url_name[1].decode('utf-8').encode('gbk')+'.txt', "w")
             content = self.GetContent()
-            if content:
-                print >> match_txt, content
-                match_txt.close()
-                match_txt = open(self.base_dir_url+url_name[1].decode('utf-8').encode('gbk')+'.txt', "r")
+            print >> match_txt, content
+            match_txt.close()
+            if (counter < 4):
                 match = open(self.base_dir_url+url_name[1].decode('utf-8').encode('gbk'), "w")
-                self.DealUrlSecond(match_txt, match, content)
+                self.DealUrlSecond14(match, content)
                 match.close()
-                match_txt.close()
+            elif (counter > 3 and counter < 8) or (counter > 11 and counter < 16) or (counter > 19 and counter < 24):
+                match = open(self.base_dir_url+url_name[1].decode('utf-8').encode('gbk'), "w")
+                self.DealUrlSecond58(match, content)
+                match.close()
+            counter += 1
         file_handler.close()
 product = media()
 product.GetUrlFirst()
